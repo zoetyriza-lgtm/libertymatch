@@ -1,60 +1,82 @@
 # LibertyMatch
 
-Encuentra con quién hacer tu próxima actividad en el campus: publica un plan (correr, estudiar, comer, jugar algún deporte) con cupo limitado, y otros estudiantes se apuntan.
+Encuentra con quién hacer tu próxima actividad en el campus: publica un plan (correr, estudiar, comer, jugar algún deporte) con cupo limitado, y otros estudiantes se apuntan. Incluye perfil con intereses, match con solicitud/aceptación entre estudiantes afines, y un blog de experiencias con comentarios.
 
 ## Demo
-- **App desplegada:** _[pega aquí tu URL de Vercel, ej. https://libertymatch.vercel.app]_
-- **Repositorio:** _[pega aquí el link de este repo en GitHub]_
+- **App desplegada:** https://zoe-project-three.vercel.app/planes
+- **Repositorio:** _[pega aquí el link de tu repo de GitHub]_
 
 ## Stack tecnológico
 
 | Herramienta | Función en el proyecto |
 |---|---|
 | **Next.js 14 (App Router)** | Framework de React: rutas, páginas y renderizado |
-| **Supabase** | Base de datos PostgreSQL + autenticación de usuarios |
-| **Tailwind CSS** | Estilos de la interfaz |
+| **Supabase** | Base de datos PostgreSQL, autenticación, y almacenamiento de imágenes (avatares, fotos de planes y de experiencias) |
+| **Tailwind CSS** | Estilos e identidad visual de la interfaz |
 | **Vercel** | Hosting y despliegue automático desde GitHub |
-| **Claude Code** | Asistente de IA usado como copiloto durante el desarrollo |
+| **Claude Code** | Asistente de IA usado como copiloto durante todo el desarrollo |
 
-Ver el documento de planeación completo (`Documento de Definición del Proyecto Final`) para la justificación detallada de cada herramienta frente a alternativas.
+## Funcionalidades
+
+- **Autenticación:** registro e inicio de sesión con correo/contraseña.
+- **Planes:** crear, listar (con filtro y sección de recomendados), ver detalle, unirse/cancelar inscripción, foto opcional, categoría opcional.
+- **Perfil:** foto, biografía y selección de intereses de una lista fija.
+- **Match:** estudiantes ordenados por cuántos intereses tienen en común contigo.
+- **Conexiones:** solicitud de conexión → la otra persona acepta o rechaza → quedan "conectados", con notificación en ambos pasos.
+- **Notificaciones internas:** avisos cuando alguien se une/cancela un plan, cuando llega una solicitud de conexión, y cuando la aceptan.
+- **Blog de experiencias:** publicar una historia (con foto opcional, etiquetada a un plan si se quiere) y comentar en las publicaciones de otros.
 
 ## Estructura del proyecto
 
 ```
 app/
-  planes/            → listado, detalle y creación de planes
+  planes/            → listado (+ recomendados), detalle y creación de planes
   mis-planes/         → planes creados / en los que estoy inscrito
-  notificaciones/      → avisos internos del usuario
-  login/, signup/       → autenticación
-components/           → Navbar y PlanCard (componentes reutilizables)
-lib/supabaseClient.js  → cliente único de Supabase
-supabase/schema.sql    → tablas, seguridad (RLS) y funciones de base de datos
+  perfil/              → foto, bio e intereses del usuario
+  match/               → estudiantes afines + botón de conectar
+  conexiones/          → solicitudes recibidas y conexiones aceptadas
+  experiencias/         → blog de experiencias + comentarios
+  notificaciones/        → avisos internos del usuario
+  login/, signup/          → autenticación
+components/            → Navbar, PlanCard, InterestPicker, Comentarios
+lib/                   → cliente de Supabase y helper de subida de imágenes
+supabase/              → schema.sql + migraciones (correr en orden)
 ```
 
 ## Lógica de inscripción (evitar condiciones de carrera)
 
-La inscripción y cancelación a un plan **no** se hacen con un simple `insert`/`delete` desde el frontend. Se implementaron como funciones de PostgreSQL (`inscribirse_a_plan`, `cancelar_inscripcion`) que bloquean la fila del plan (`for update`) antes de verificar el cupo disponible. Esto evita que dos personas ocupen el mismo último cupo al mismo tiempo — un caso borde identificado desde la fase de planeación.
+La inscripción y cancelación a un plan se implementaron como funciones de PostgreSQL (`inscribirse_a_plan`, `cancelar_inscripcion`) que bloquean la fila del plan (`for update`) antes de verificar el cupo disponible. Esto evita que dos personas ocupen el mismo último cupo al mismo tiempo — un caso borde identificado desde la fase de planeación y validado en el código.
 
 ## Prompts principales usados con Claude Code
 
-_(Esta sección se completa conforme se use Claude Code para ajustar o depurar el proyecto. Ejemplos de formato:)_
+Estos son prompts reales que se usaron durante el desarrollo y qué desbloquearon:
 
-- **Prompt:** "Agrega manejo de error cuando la fecha de un plan ya pasó, mostrando un mensaje claro en el formulario de creación."
-  **Qué desbloqueó:** validación de fecha en el formulario de creación de planes.
+- **"Necesito que quede como tipo Rhode Beauty y que haya algún tipo de efecto o animación que se vea interactivo"**
+  → Rediseño completo de la identidad visual (paleta, tipografía itálica delicada, fondo con degradado tipo "glossy") y micro-interacciones (tarjetas que flotan al pasar el mouse, botones con elevación suave, entrada con fade-in).
 
-- **Prompt:** "Explícame por qué la inscripción al último cupo podría fallar si dos personas se inscriben al mismo tiempo, y ayúdame a resolverlo con Supabase."
-  **Qué desbloqueó:** las funciones `inscribirse_a_plan` / `cancelar_inscripcion` con bloqueo de fila.
+- **"Error: Couldn't find any pages or app directory"** (al desplegar en Vercel)
+  → Diagnóstico de que la carpeta `app/` había quedado anidada dentro de otra carpeta por un error al subir archivos a GitHub arrastrando de forma incorrecta. Se resolvió recreando el repositorio y subiendo desde la pantalla de "quick setup" (que siempre sube a la raíz).
+
+- **"Ocurrió un error al guardar: Could not find the 'bio' column of 'profiles'"**
+  → El código ya usaba columnas nuevas (`bio`, `intereses`, `foto_url`) que existían en el código pero no se habían creado todavía en la base de datos real, porque faltaba correr el script de migración correspondiente en Supabase.
+
+- **"npm warn deprecated next@14.2.15: This version has a security vulnerability"**
+  → Se identificó la versión parchada correcta (`14.2.35`) y se actualizó `package.json`.
+
+- **"Me interesan más las funcionalidades de poder hacer match con ciertas personas acorde a los intereses"**
+  → Diseño e implementación completa del sistema de match: perfil con intereses seleccionables, cálculo de afinidad por intereses compartidos, y sistema de conexiones con solicitud/aceptación (tabla `conexiones` con estados `pendiente`/`aceptada`/`rechazada`).
 
 ## Limitaciones conocidas
 
-- No hay chat en tiempo real entre participantes (queda como trabajo futuro).
-- No hay sistema de calificación/reputación de usuarios.
+- No hay chat en tiempo real entre participantes de un plan ni entre conexiones — decisión tomada desde la fase de planeación por la complejidad técnica que agregaría (WebSockets/servicio de mensajería) frente al tiempo disponible.
+- No hay notificaciones push del navegador, solo notificaciones internas dentro de la app.
+- El match se basa en intereses declarados por el usuario (lista fija de categorías), no en un algoritmo de recomendación más sofisticado.
 - El lugar del plan es texto libre, no coordenadas de mapa.
 - Plan gratuito de Supabase: límites de conexiones concurrentes y almacenamiento, suficientes para el alcance de este proyecto.
 
 ## Autoevaluación
 
-_(Completar al terminar el proyecto: qué funcionó bien, qué se tuvo que ajustar respecto al plan original, y qué se aprendió sobre el uso de IA como copiloto de código.)_
+La parte de programar la lógica de la aplicación (planes, cupos, match, conexiones) resultó relativamente directa usando Claude Code como copiloto. La mayor dificultad real estuvo en el **despliegue y la configuración** — errores como la carpeta `app/` mal ubicada al subir a GitHub, la migración de base de datos que había que correr manualmente en el orden correcto, o encontrar las variables de entorno correctas en Supabase, tomaron más tiempo que escribir el código en sí. Esto fue un aprendizaje importante: usar IA para generar código funcional es solo una parte del trabajo real de shippear una aplicación; el resto (control de versiones, variables de entorno, migraciones de base de datos) requiere entender qué está pasando y no solo copiar y pegar sin verificar. También aprendí a diagnosticar errores leyendo los mensajes con cuidado (por ejemplo, distinguir un error que rompe el despliegue de una simple advertencia de seguridad que no lo hace) en vez de asumir que cualquier mensaje en la consola significa que algo está roto.
 
 ## Cómo correr el proyecto en local
 
