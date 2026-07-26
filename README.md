@@ -4,7 +4,7 @@ Encuentra con quién hacer tu próxima actividad en el campus: publica un plan (
 
 ## Demo
 - **App desplegada:** https://zoe-project-three.vercel.app/planes
-- **Repositorio:** _[pega aquí el link de tu repo de GitHub]_
+- **Repositorio:** https://github.com/zoetyriza-lgtm/ZoeProject
 
 ## Stack tecnológico
 
