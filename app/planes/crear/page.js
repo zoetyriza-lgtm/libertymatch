@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
 import { subirImagen } from "../../../lib/uploadImage";
+import { INTERESES } from "../../../components/InterestPicker";
 
 export default function CrearPlanPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function CrearPlanPage() {
   const [fecha, setFecha] = useState("");
   const [lugar, setLugar] = useState("");
   const [cupoMaximo, setCupoMaximo] = useState(4);
+  const [categoria, setCategoria] = useState("");
   const [imagen, setImagen] = useState(null);
   const [previaImagen, setPreviaImagen] = useState(null);
   const [error, setError] = useState("");
@@ -80,6 +82,7 @@ export default function CrearPlanPage() {
         cupo_maximo: Number(cupoMaximo),
         estado: "abierto",
         foto_url: imagenUrl,
+        categoria: categoria || null,
       })
       .select()
       .single();
@@ -162,6 +165,25 @@ export default function CrearPlanPage() {
             className="w-full border border-ink/20 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-mustard"
             required
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Categoría (opcional)</label>
+          <select
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            className="w-full border border-ink/20 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-mustard"
+          >
+            <option value="">Sin categoría</option>
+            {INTERESES.map((interes) => (
+              <option key={interes} value={interes}>
+                {interes}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-ink/50 mt-1">
+            Ayuda a recomendar tu plan a estudiantes con ese interés.
+          </p>
         </div>
 
         <div>

@@ -11,6 +11,7 @@ export default function PlanesPage() {
   const [cargando, setCargando] = useState(true);
   const [filtroActividad, setFiltroActividad] = useState("");
   const [soloFuturos, setSoloFuturos] = useState(true);
+  const [misIntereses, setMisIntereses] = useState([]);
 
   useEffect(() => {
     cargarPlanes();
@@ -18,6 +19,16 @@ export default function PlanesPage() {
 
   async function cargarPlanes() {
     setCargando(true);
+
+    const { data: sesion } = await supabase.auth.getSession();
+    if (sesion.session) {
+      const { data: miPerfil } = await supabase
+        .from("profiles")
+        .select("intereses")
+        .eq("id", sesion.session.user.id)
+        .single();
+      setMisIntereses(miPerfil?.intereses || []);
+    }
 
     const { data: planesData } = await supabase
       .from("planes")
@@ -52,6 +63,13 @@ export default function PlanesPage() {
     return true;
   });
 
+  const planesRecomendados = misIntereses.length
+    ? planesFiltrados.filter((p) => p.categoria && misIntereses.includes(p.categoria))
+    : [];
+
+  const idsRecomendados = new Set(planesRecomendados.map((p) => p.id));
+  const restoDePlanes = planesFiltrados.filter((p) => !idsRecomendados.has(p.id));
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -84,6 +102,16 @@ export default function PlanesPage() {
 
       {cargando && <p className="text-ink/60">Cargando planes...</p>}
 
+      {!cargando && planesRecomendados.length > 0 && (
+        <div className="mb-8">
+          <h2 className="font-display text-2xl mb-1">Recomendados para ti</h2>
+          <p className="text-xs text-ink/50 mb-3">Según los intereses de tu perfil</p>
+          {planesRecomendados.map((plan) => (
+            <PlanCard key={plan.id} plan={plan} inscritosCount={conteos[plan.id] || 0} />
+          ))}
+        </div>
+      )}
+
       {!cargando && planesFiltrados.length === 0 && (
         <div className="pin-card rounded-xl p-8 text-center">
           <div className="pin-dot" />
@@ -91,8 +119,12 @@ export default function PlanesPage() {
         </div>
       )}
 
+      {!cargando && planesRecomendados.length > 0 && restoDePlanes.length > 0 && (
+        <h2 className="font-display text-2xl mb-3">Todos los planes</h2>
+      )}
+
       {!cargando &&
-        planesFiltrados.map((plan) => (
+        restoDePlanes.map((plan) => (
           <PlanCard key={plan.id} plan={plan} inscritosCount={conteos[plan.id] || 0} />
         ))}
     </div>

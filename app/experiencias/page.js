@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
+import Comentarios from "../../components/Comentarios";
 
 export default function ExperienciasPage() {
   const [experiencias, setExperiencias] = useState([]);
@@ -69,6 +70,7 @@ export default function ExperienciasPage() {
             {exp.planes?.actividad && <> · sobre "{exp.planes.actividad}"</>}
           </p>
           <p className="text-sm text-ink/80 whitespace-pre-line not-italic">{exp.contenido}</p>
+          <Comentarios experienciaId={exp.id} />
         </article>
       ))}
     </div>
