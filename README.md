@@ -23,6 +23,8 @@ Encuentra con quién hacer tu próxima actividad en el campus: publica un plan (
 - **Perfil:** foto, biografía y selección de intereses de una lista fija.
 - **Match:** estudiantes ordenados por cuántos intereses tienen en común contigo.
 - **Conexiones:** solicitud de conexión → la otra persona acepta o rechaza → quedan "conectados", con notificación en ambos pasos.
+- **Mensajes directos:** una vez conectados, dos estudiantes pueden escribirse en una conversación (se actualiza sola cada 5 segundos). Protegido a nivel de base de datos: solo puedes escribirle a alguien con quien tienes una conexión aceptada.
+- **Planes recurrentes:** al crear un plan se puede activar que se repita semanalmente (2 a 12 semanas), generando automáticamente una instancia por semana, todas agrupadas.
 - **Notificaciones internas:** avisos cuando alguien se une/cancela un plan, cuando llega una solicitud de conexión, y cuando la aceptan.
 - **Blog de experiencias:** publicar una historia (con foto opcional, etiquetada a un plan si se quiere) y comentar en las publicaciones de otros.
 
@@ -35,6 +37,7 @@ app/
   perfil/              → foto, bio e intereses del usuario
   match/               → estudiantes afines + botón de conectar
   conexiones/          → solicitudes recibidas y conexiones aceptadas
+  mensajes/[usuarioId]/ → conversación directa con una conexión aceptada
   experiencias/         → blog de experiencias + comentarios
   notificaciones/        → avisos internos del usuario
   login/, signup/          → autenticación
@@ -66,17 +69,24 @@ Estos son prompts reales que se usaron durante el desarrollo y qué desbloquearo
 - **"Me interesan más las funcionalidades de poder hacer match con ciertas personas acorde a los intereses"**
   → Diseño e implementación completa del sistema de match: perfil con intereses seleccionables, cálculo de afinidad por intereses compartidos, y sistema de conexiones con solicitud/aceptación (tabla `conexiones` con estados `pendiente`/`aceptada`/`rechazada`).
 
+- **"Quiero agregar algo un poco más complejo: mensajes directos entre conexiones y planes recurrentes"**
+  → Tabla `mensajes` con una política de seguridad (RLS) que exige que exista una conexión con estado `aceptada` antes de permitir el insert — es decir, la restricción de "solo puedes escribirle a tus conexiones" vive en la base de datos, no solo en la interfaz. Para los planes recurrentes, se generan varias filas en `planes` en un solo insert, todas compartiendo un `serie_id`, en vez de crear una tabla de "reglas de recurrencia" más compleja.
+
+- **"ERROR: 42710: policy already exists"** (al re-correr una migración)
+  → Se ajustó el script SQL para usar `drop policy if exists` antes de cada `create policy`, haciendo la migración segura de correr más de una vez sin romperse — una buena práctica de idempotencia que no se había aplicado en las migraciones anteriores.
+
 ## Limitaciones conocidas
 
-- No hay chat en tiempo real entre participantes de un plan ni entre conexiones — decisión tomada desde la fase de planeación por la complejidad técnica que agregaría (WebSockets/servicio de mensajería) frente al tiempo disponible.
+- No hay chat en tiempo real real (WebSockets) — los mensajes directos se refrescan cada 5 segundos en vez de aparecer instantáneamente, como una decisión consciente para reducir complejidad y riesgo de configuración.
 - No hay notificaciones push del navegador, solo notificaciones internas dentro de la app.
 - El match se basa en intereses declarados por el usuario (lista fija de categorías), no en un algoritmo de recomendación más sofisticado.
+- Los planes recurrentes se crean como filas independientes agrupadas por `serie_id`; cancelar o editar toda la serie a la vez no está implementado, solo plan por plan.
 - El lugar del plan es texto libre, no coordenadas de mapa.
 - Plan gratuito de Supabase: límites de conexiones concurrentes y almacenamiento, suficientes para el alcance de este proyecto.
 
 ## Autoevaluación
 
-La parte de programar la lógica de la aplicación (planes, cupos, match, conexiones) resultó relativamente directa usando Claude Code como copiloto. La mayor dificultad real estuvo en el **despliegue y la configuración** — errores como la carpeta `app/` mal ubicada al subir a GitHub, la migración de base de datos que había que correr manualmente en el orden correcto, o encontrar las variables de entorno correctas en Supabase, tomaron más tiempo que escribir el código en sí. Esto fue un aprendizaje importante: usar IA para generar código funcional es solo una parte del trabajo real de shippear una aplicación; el resto (control de versiones, variables de entorno, migraciones de base de datos) requiere entender qué está pasando y no solo copiar y pegar sin verificar. También aprendí a diagnosticar errores leyendo los mensajes con cuidado (por ejemplo, distinguir un error que rompe el despliegue de una simple advertencia de seguridad que no lo hace) en vez de asumir que cualquier mensaje en la consola significa que algo está roto.
+La parte de programar la lógica de la aplicación (planes, cupos, match, conexiones, mensajes) resultó relativamente directa usando Claude Code como copiloto. La mayor dificultad real estuvo en el **despliegue, la configuración y el manejo de migraciones de base de datos** — errores como la carpeta `app/` mal ubicada al subir a GitHub, migraciones que había que correr en el orden correcto, o una política de seguridad duplicada al re-ejecutar un script, tomaron más tiempo que escribir el código en sí. Esto fue un aprendizaje importante: usar IA para generar código funcional es solo una parte del trabajo real de shippear una aplicación; el resto (control de versiones, variables de entorno, migraciones idempotentes) requiere entender qué está pasando y no solo copiar y pegar sin verificar. También aprendí a distinguir advertencias inofensivas (como un aviso de "operación destructiva" en un script que en realidad solo reemplaza una política de seguridad) de errores que sí requieren detenerse a pensar antes de continuar.
 
 ## Cómo correr el proyecto en local
 
