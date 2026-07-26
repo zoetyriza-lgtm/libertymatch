@@ -1,0 +1,92 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(201, 155, 142, 0.16), transparent),
+    #f4ede6;
+  color: #2b2320;
+  letter-spacing: 0.01em;
+}
+
+.pin-card {
+  position: relative;
+  background: linear-gradient(160deg, #fffdfa 0%, #fdf6f1 100%);
+  border: 1px solid rgba(43, 35, 32, 0.06);
+  border-radius: 1.75rem;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pin-card:hover {
+  transform: translateY(-4px) scale(1.005);
+  box-shadow: 0 24px 48px -24px rgba(43, 35, 32, 0.28);
+}
+
+.pin-dot {
+  position: absolute;
+  top: -6px;
+  left: 28px;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 30% 30%, #fff, #c99b8e 70%);
+  box-shadow: 0 2px 6px rgba(43, 35, 32, 0.18);
+}
+
+.cupo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  display: inline-block;
+  margin-right: 3px;
+}
+
+h1, h2, h3, .font-display {
+  letter-spacing: 0.01em;
+  font-style: italic;
+}
+
+/* Botones sólidos: elevación suave + brillo al pasar el mouse (sin tocar cada página) */
+.bg-ink, button.bg-ink, a.bg-ink {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, opacity 0.25s ease;
+}
+.bg-ink:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -12px rgba(43, 35, 32, 0.45);
+}
+.bg-ink:active {
+  transform: translateY(0);
+}
+
+.bg-clay,
+.bg-moss {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+}
+.bg-clay:hover,
+.bg-moss:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -12px rgba(43, 35, 32, 0.3);
+}
+
+input, textarea {
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+/* Entrada suave del contenido de cada página */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
