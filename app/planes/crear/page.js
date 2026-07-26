@@ -15,6 +15,8 @@ export default function CrearPlanPage() {
   const [lugar, setLugar] = useState("");
   const [cupoMaximo, setCupoMaximo] = useState(4);
   const [categoria, setCategoria] = useState("");
+  const [repetir, setRepetir] = useState(false);
+  const [semanas, setSemanas] = useState(4);
   const [imagen, setImagen] = useState(null);
   const [previaImagen, setPreviaImagen] = useState(null);
   const [error, setError] = useState("");
@@ -71,21 +73,31 @@ export default function CrearPlanPage() {
       }
     }
 
-    const { data: nuevoPlan, error: insertError } = await supabase
-      .from("planes")
-      .insert({
+    const totalRepeticiones = repetir ? Math.min(Math.max(Number(semanas) || 1, 2), 12) : 1;
+    const serieId = repetir ? crypto.randomUUID() : null;
+    const fechaBase = new Date(fecha);
+
+    const filasAInsertar = Array.from({ length: totalRepeticiones }, (_, i) => {
+      const fechaInstancia = new Date(fechaBase);
+      fechaInstancia.setDate(fechaInstancia.getDate() + i * 7);
+      return {
         creador_id: usuario.id,
         actividad,
         descripcion,
-        fecha,
+        fecha: fechaInstancia.toISOString(),
         lugar,
         cupo_maximo: Number(cupoMaximo),
         estado: "abierto",
         foto_url: imagenUrl,
         categoria: categoria || null,
-      })
-      .select()
-      .single();
+        serie_id: serieId,
+      };
+    });
+
+    const { data: planesCreados, error: insertError } = await supabase
+      .from("planes")
+      .insert(filasAInsertar)
+      .select();
 
     if (insertError) {
       setCargando(false);
@@ -93,14 +105,13 @@ export default function CrearPlanPage() {
       return;
     }
 
-    // El creador ocupa un cupo automáticamente
-    await supabase.from("inscripciones").insert({
-      plan_id: nuevoPlan.id,
-      usuario_id: usuario.id,
-    });
+    // El creador ocupa un cupo automáticamente en cada instancia
+    await supabase
+      .from("inscripciones")
+      .insert(planesCreados.map((p) => ({ plan_id: p.id, usuario_id: usuario.id })));
 
     setCargando(false);
-    router.push(`/planes/${nuevoPlan.id}`);
+    router.push(`/planes/${planesCreados[0].id}`);
   }
 
   if (!usuario) return null;
@@ -200,6 +211,33 @@ export default function CrearPlanPage() {
               alt="Vista previa"
               className="mt-3 rounded-xl w-full h-40 object-cover border-2 border-ink/10"
             />
+          )}
+        </div>
+
+        <div className="bg-board/60 rounded-lg p-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={repetir}
+              onChange={(e) => setRepetir(e.target.checked)}
+            />
+            Repetir este plan cada semana
+          </label>
+          {repetir && (
+            <div className="mt-3">
+              <label className="block text-xs font-medium mb-1">¿Cuántas semanas?</label>
+              <input
+                type="number"
+                min="2"
+                max="12"
+                value={semanas}
+                onChange={(e) => setSemanas(e.target.value)}
+                className="w-24 border border-ink/20 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-mustard"
+              />
+              <p className="text-xs text-ink/50 mt-1">
+                Se crearán {Math.min(Math.max(Number(semanas) || 1, 2), 12)} planes, uno cada semana a partir de la fecha de arriba (máx. 12).
+              </p>
+            </div>
           )}
         </div>
 

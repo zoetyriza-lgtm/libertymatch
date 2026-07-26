@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 
 export default function ConexionesPage() {
@@ -107,7 +108,12 @@ export default function ConexionesPage() {
               )}
             </div>
             <p className="flex-1 text-sm font-medium not-italic">{persona?.nombre}</p>
-            <span className="text-xs text-moss font-medium not-italic">Conectados ✓</span>
+            <Link
+              href={`/mensajes/${persona?.id}`}
+              className="text-xs bg-ink text-paper px-3 py-1.5 rounded-full font-medium not-italic hover:opacity-90 transition-all"
+            >
+              Mensaje
+            </Link>
           </div>
         );
       })}

@@ -46,7 +46,12 @@ export default function PlanCard({ plan, inscritosCount }) {
               {ESTADO_LABEL[plan.estado] || plan.estado}
             </span>
           </div>
-          <p className="text-sm text-ink/70 mt-1 not-italic">{formatearFecha(plan.fecha)} · {plan.lugar}</p>
+          <p className="text-sm text-ink/70 mt-1 not-italic">
+            {formatearFecha(plan.fecha)} · {plan.lugar}
+            {plan.serie_id && (
+              <span className="ml-2 text-xs bg-board px-2 py-0.5 rounded-full text-ink/60">🔁 Recurrente</span>
+            )}
+          </p>
           {plan.descripcion && <p className="text-sm text-ink/80 mt-2 not-italic">{plan.descripcion}</p>}
           <div className="mt-3 flex items-center gap-1">
             {cupos.map((ocupado, i) => (
