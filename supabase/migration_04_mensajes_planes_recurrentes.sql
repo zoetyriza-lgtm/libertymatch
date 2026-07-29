@@ -1,9 +1,9 @@
 -- ============================================================
--- LibertyMatch — Migración 05
+-- LibertyMatch — Migración 04
 -- Mensajes directos (solo entre conexiones aceptadas)
 -- y soporte para planes recurrentes
 --
--- Ejecuta esto DESPUÉS de schema.sql, migration_02, 03 y 04
+-- Ejecuta esto DESPUÉS de schema.sql, migration_02 y migration_03
 -- Supabase: SQL Editor > New query > pega todo > Run
 -- ============================================================
 
@@ -19,10 +19,12 @@ create table if not exists mensajes (
 
 alter table mensajes enable row level security;
 
+drop policy if exists "Ver mis mensajes" on mensajes;
 create policy "Ver mis mensajes" on mensajes for select
   using (auth.uid() = remitente_id or auth.uid() = destinatario_id);
 
 -- Solo puedes escribirle a alguien con quien tienes una conexión ACEPTADA
+drop policy if exists "Enviar mensaje a una conexion aceptada" on mensajes;
 create policy "Enviar mensaje a una conexion aceptada" on mensajes for insert
   with check (
     auth.uid() = remitente_id
@@ -37,6 +39,7 @@ create policy "Enviar mensaje a una conexion aceptada" on mensajes for insert
     )
   );
 
+drop policy if exists "Marcar mensaje como leido" on mensajes;
 create policy "Marcar mensaje como leido" on mensajes for update
   using (auth.uid() = destinatario_id);
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
+import Estrellas from "../../components/Estrellas";
 
 export default function MatchPage() {
   const router = useRouter();
@@ -45,7 +46,20 @@ export default function MatchPage() {
       })
       .sort((a, b) => b.compartidos.length - a.compartidos.length);
 
-    setPersonas(conPuntaje);
+    // Reputación: promedio de estrellas recibidas por cada persona
+    const { data: todasCalificaciones } = await supabase
+      .from("calificaciones")
+      .select("calificado_id, estrellas");
+
+    const conReputacion = conPuntaje.map((p) => {
+      const propias = (todasCalificaciones || []).filter((c) => c.calificado_id === p.id);
+      const promedio = propias.length
+        ? propias.reduce((acc, c) => acc + c.estrellas, 0) / propias.length
+        : 0;
+      return { ...p, reputacion: { promedio, total: propias.length } };
+    });
+
+    setPersonas(conReputacion);
 
     // Mis conexiones (enviadas o recibidas) para saber qué botón mostrar
     const { data: misConexiones } = await supabase
@@ -130,7 +144,8 @@ export default function MatchPage() {
           </div>
           <div className="flex-1">
             <h3 className="font-display text-xl">{p.nombre}</h3>
-            {p.bio && <p className="text-sm text-ink/70 not-italic">{p.bio}</p>}
+            <Estrellas promedio={p.reputacion.promedio} total={p.reputacion.total} size="text-xs" />
+            {p.bio && <p className="text-sm text-ink/70 mt-1 not-italic">{p.bio}</p>}
             {p.compartidos.length > 0 ? (
               <p className="text-xs text-moss font-medium mt-1 not-italic">
                 {p.compartidos.length} interés{p.compartidos.length > 1 ? "es" : ""} en común:{" "}

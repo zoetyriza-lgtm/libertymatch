@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { subirImagen } from "../../lib/uploadImage";
 import InterestPicker from "../../components/InterestPicker";
+import Estrellas from "../../components/Estrellas";
 
 export default function PerfilPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function PerfilPage() {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState("");
+  const [reputacion, setReputacion] = useState({ promedio: 0, total: 0 });
 
   useEffect(() => {
     cargar();
@@ -43,6 +45,17 @@ export default function PerfilPage() {
       setIntereses(perfil.intereses || []);
       setFotoUrl(perfil.foto_url || null);
     }
+
+    const { data: calif } = await supabase
+      .from("calificaciones")
+      .select("estrellas")
+      .eq("calificado_id", sesion.session.user.id);
+
+    if (calif && calif.length > 0) {
+      const promedio = calif.reduce((acc, c) => acc + c.estrellas, 0) / calif.length;
+      setReputacion({ promedio, total: calif.length });
+    }
+
     setCargando(false);
   }
 
@@ -86,9 +99,12 @@ export default function PerfilPage() {
     <div className="pin-card rounded-2xl shadow-pin p-8 max-w-lg mx-auto">
       <div className="pin-dot" />
       <h1 className="font-display text-3xl mb-1">Tu perfil</h1>
-      <p className="text-sm text-ink/60 mb-6 not-italic">
+      <p className="text-sm text-ink/60 mb-2 not-italic">
         Así te van a ver otros estudiantes al buscar match.
       </p>
+      <div className="mb-6">
+        <Estrellas promedio={reputacion.promedio} total={reputacion.total} />
+      </div>
 
       <form onSubmit={guardar} className="space-y-5">
         <div className="flex items-center gap-4">
